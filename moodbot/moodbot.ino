@@ -1,172 +1,213 @@
 #include <Arduino_LED_Matrix.h>
+#include <Modulino.h>
 
 ArduinoLEDMatrix matrix;
+ModulinoKnob knob;
+ModulinoPixels leds;
+
+ModulinoColor red(255, 0, 0);
+ModulinoColor purple(128, 0, 128);
+ModulinoColor yellow(255, 165, 0);
+ModulinoColor blue(0, 0, 255); 
+ModulinoColor green(0, 255, 0); 
+
+int valueSetKnob = 50;
+int zeroSetValue = 0;
+int brightness = 25;
+bool wasPressed = false;
+
+void setup() {
+  Serial.begin(115200);
+  matrix.begin();
+  Modulino.begin();
+  knob.begin();
+  leds.begin();
+
+  zeroSetValue = knob.get();
+}
 
 uint8_t frame[8][12] = {0};
 
-// Robot emoji
-void robotlefteye(){
-  frame[1][3] = 1;
-  frame[1][4] = 1;
-  frame[2][3] = 1;
-  frame[2][4] = 1;
+// Robot eye function 
+void setEye(int row, int col, bool closed = false){
+  frame[row][col] = closed ? 0 : 1;
+  frame[row][col + 1] = closed ? 0 : 1;
+  frame[row + 1][col] = 1;
+  frame[row + 1][col + 1] = 1;
 }
 
+void robotlefteye(){
+  setEye(1, 3);
+}
 
 void robotrighteye(){
-  frame[1][7] = 1;
-  frame[1][8] = 1;
-  frame[2][7] = 1;
-  frame[2][8] = 1;
+  setEye(1, 7);
 }
 
 void lefteyeclosed(){
-  frame[1][3] = 0;
-  frame[1][4] = 0;
-  frame[2][3] = 1;
-  frame[2][4] = 1;
+  setEye(1, 3, true);
 }
-
 
 void righteyeclosed(){
-  frame[1][7] = 0;
-  frame[1][8] = 0;
-  frame[2][7] = 1;
-  frame[2][8] = 1;
+  setEye(1, 7, true);
 }
 
-void robotmouth(){
-  frame[4][3] = 0;
-  frame[4][4] = 0;
-  frame[4][5] = 0;
-  frame[4][6] = 0;
-  frame[4][7] = 0;
-  frame[4][8] = 0;
-
-  frame[5][3] = 1;
-  frame[5][4] = 1;
-  frame[5][5] = 1;
-  frame[5][6] = 1;
-  frame[5][7] = 1;
-  frame[5][8] = 1;
-
-  frame[6][3] = 1;
-  frame[6][4] = 1;
-  frame[6][5] = 1;
-  frame[6][6] = 1;
-  frame[6][7] = 1;
-  frame[6][8] = 1;
+void drawMouth(const uint8_t mouth[3][6]){
+  for (int row = 0; row < 3; row ++){
+    for(int col = 0; col < 6; col++){
+      frame[4 + row][3 + col] = mouth[row][col];
+    }
+  }
 }
 
-void robotmouthsmile(){
-  frame[4][3] = 1;
-  frame[4][4] = 0;
-  frame[4][5] = 0;
-  frame[4][6] = 0;
-  frame[4][7] = 0;
-  frame[4][8] = 1;
+const uint8_t mouthNeutral[3][6] = {
+  {0, 0, 0, 0, 0, 0},
+  {1, 1, 1, 1, 1, 1},
+  {1, 1, 1, 1, 1, 1}
+};
 
-  frame[5][3] = 1;
-  frame[5][4] = 0;
-  frame[5][5] = 0;
-  frame[5][6] = 0;
-  frame[5][7] = 0;
-  frame[5][8] = 1;
+const uint8_t mouthSmile[3][6] = {
+  {1, 0, 0, 0, 0, 1},
+  {1, 0, 0, 0, 0, 1},
+  {1, 1, 1, 1, 1, 1}
+};
 
-  frame[6][3] = 1;
-  frame[6][4] = 1;
-  frame[6][5] = 1;
-  frame[6][6] = 1;
-  frame[6][7] = 1;
-  frame[6][8] = 1;
-}
+const uint8_t mouthSad[3][6] = {
+  {1, 1, 1, 1, 1, 1},
+  {1, 0, 0, 0, 0, 1},
+  {1, 0, 0, 0, 0, 1}
+};
 
-void robotmouthsad(){
-
-  frame[4][3] = 1;
-  frame[4][4] = 1;
-  frame[4][5] = 1;
-  frame[4][6] = 1;
-  frame[4][7] = 1;
-  frame[4][8] = 1;
-
-  frame[5][3] = 1;
-  frame[5][4] = 0;
-  frame[5][5] = 0;
-  frame[5][6] = 0;
-  frame[5][7] = 0;
-  frame[5][8] = 1;
-
-  frame[6][3] = 1;
-  frame[6][4] = 0;
-  frame[6][5] = 0;
-  frame[6][6] = 0;
-  frame[6][7] = 0;
-  frame[6][8] = 1;
-}
-
-void robotmouthsuprise(){
-  frame[4][3] = 1;
-  frame[4][4] = 1;
-  frame[4][5] = 1;
-  frame[4][6] = 1;
-  frame[4][7] = 1;
-  frame[4][8] = 1;
-
-  frame[5][3] = 1;
-  frame[5][4] = 0;
-  frame[5][5] = 0;
-  frame[5][6] = 0;
-  frame[5][7] = 0;
-  frame[5][8] = 1;
-
-  frame[6][3] = 1;
-  frame[6][4] = 1;
-  frame[6][5] = 1;
-  frame[6][6] = 1;
-  frame[6][7] = 1;
-  frame[6][8] = 1;
-}
+const uint8_t mouthSuprise[3][6] = {
+  {1, 1, 1, 1, 1, 1},
+  {1, 0, 0, 0, 0, 1},
+  {1, 1, 1, 1, 1, 1}
+};
 
 void loop() {
-  matrix.loadFrame(LEDMATRIX_EMOJI_BASIC);
+  // Check knob click
+  bool click = knob.isPressed();
+
+  // Read knob position
+  int currentValue = knob.get();
+  int knobValue = currentValue - zeroSetValue;
+  zeroSetValue = currentValue;
+  
+  valueSetKnob += knobValue;
+
+  // Set range 0, 100
+  valueSetKnob = constrain(valueSetKnob, 0, 100);
+
+  // Reset everything on click
+  if (click && !wasPressed){
+    valueSetKnob = 50;
+    zeroSetValue = knob.get();
+    Serial.println("Knob reset to center.");
+  }
+  wasPressed = click;
+
+
+  // Map knob value to delay range
+  int animationDelay = map(valueSetKnob, 0, 100, 1000, 100);
+  animationDelay = constrain(animationDelay, 100, 1000); 
+
+
+  // LED dislay for speed of animations
+  leds.clear();
+  int numLeds = 0;
+  ModulinoColor color = blue;
+  int blinkTimes = 0;
+  int blinkDelay = 0;
+
+  if(animationDelay <= 100){
+    numLeds = 8;
+    color = red;
+    blinkTimes = 3;
+    blinkDelay = 100;
+  } else if(animationDelay <= 200){
+    numLeds = 7;
+    color = purple;
+    blinkTimes = 2;
+    blinkDelay = 150;
+  } else if (animationDelay <= 400){
+    numLeds = 6;
+    color = yellow;
+    blinkTimes = 1;
+    blinkDelay = 200;
+  } else if (animationDelay <= 600){
+    numLeds = 4;
+  } else if (animationDelay <= 800){
+    numLeds = 2;
+    color = green;
+  } else {
+    numLeds = 1;
+    color = green;
+  }
+
+if (blinkTimes > 0) {
+  for (int b = 0; b < blinkTimes; b++) {
+    for (int i = 0; i < numLeds; i++) {
+      leds.set(i, color);
+    }
+    leds.show();
+    delay(blinkDelay);
+
+    // Turn LEDs OFF
+    leds.clear();
+    leds.show();
+    delay(blinkDelay);
+  }
+} else {
+  for (int i = 0; i < numLeds; i++) {
+    leds.set(i, color);
+  }
+  leds.show();
+}
+
+  Serial.println("Knob: ");
+  Serial.println(valueSetKnob);
+  Serial.println("Delay: ");
+  Serial.println(animationDelay);
+
   // Neutral robot face
-  robotmouth();
+  drawMouth(mouthNeutral);
   robotlefteye();
   robotrighteye();
   matrix.renderBitmap(frame, 8, 12);
 
   // Right eye wink robot face
-  delay(1000);
+  delay(animationDelay);
   righteyeclosed();
   matrix.renderBitmap(frame, 8, 12);
 
   // Smile robot face
-  delay(1000);
+  delay(animationDelay);
   robotlefteye();
   robotrighteye();
-  robotmouthsmile();
+  drawMouth(mouthSmile);
   matrix.renderBitmap(frame, 8, 12);
 
   // Sleep robot face
-  delay(1000);
+  delay(animationDelay);
   lefteyeclosed();
   righteyeclosed();
-  robotmouth();
+  drawMouth(mouthNeutral);
   matrix.renderBitmap(frame, 8, 12);
 
   // Sad robot face
-  delay(1000);
+  delay(animationDelay);
   robotrighteye();
   robotlefteye();
-  robotmouthsad();
+  drawMouth(mouthSad);
   matrix.renderBitmap(frame, 8, 12);
 
   // Suprise robot face
-  delay(1000);
+  delay(animationDelay);
   robotrighteye();
   robotlefteye();
-  robotmouthsuprise();
+  drawMouth(mouthSuprise);
   matrix.renderBitmap(frame, 8, 12);
-  delay(1000);
+  delay(animationDelay);
+
+  zeroSetValue - currentValue;
 }
